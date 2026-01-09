@@ -53,9 +53,8 @@ neonjsx-example/
     "target": "ES2020",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "jsx": "react",
-    "jsxFactory": "h",
-    "jsxFragmentFactory": "Fragment",
+    "jsx": "react-jsx",
+    "jsxImportSource": "@nutsloop/neonjsx"
     "strict": true
   },
   "include": ["src"]
@@ -64,7 +63,7 @@ neonjsx-example/
 
 `src/index.tsx`:
 ```ts
-import { h, Fragment, render } from '@nutsloop/neonjsx';
+import { render } from '@nutsloop/neonjsx';
 
 const App = () => (
   <main>
