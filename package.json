@@ -1,13 +1,29 @@
 {
   "name": "@nutsloop/neonjsx",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "Apache-2.0",
   "description": "Lightweight JSX runtime.",
   "type": "module",
   "main": "index.js",
   "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./index.js"
+    },
+    "./jsx-runtime": {
+      "types": "./types/jsx-runtime.d.ts",
+      "default": "./jsx-runtime.js"
+    },
+    "./jsx-dev-runtime": {
+      "types": "./types/jsx-dev-runtime.d.ts",
+      "default": "./jsx-dev-runtime.js"
+    }
+  },
   "files": [
     "index.js",
+    "jsx-runtime.js",
+    "jsx-dev-runtime.js",
     "lib/**/*.js",
     "types/**/*.d.ts",
     "!**/*.js.map"
