@@ -1,0 +1,37 @@
+{
+  "compilerOptions": {
+    "module": "nodenext",
+    "target": "esnext",
+    "moduleResolution": "nodenext",
+    "jsx": "preserve",
+    "outDir": "./",
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": true,
+    "allowJs": false,
+    "experimentalDecorators": true,
+    "declarationDir": "./types",
+    "listEmittedFiles": true,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "sourceMap": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./.tsbuildinfo",
+    "esModuleInterop": true,
+    "skipLibCheck": true
+  },
+  "include": [
+    "./src/**/*.ts",
+    "./src/**/*.tsx"
+  ],
+  "exclude": [
+    "./node_modules/**/*",
+    "./build/**/*",
+    "./lib/**/*",
+    "./types/**/*"
+  ]
+}

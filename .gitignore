@@ -1,0 +1,38 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# Node + package managers
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.npm/
+
+# Logs + caches
+logs/
+*.log
+.cache/
+.eslintcache
+
+# Environment files
+.env
+.env.*.local
+
+# TypeScript build artifacts
+*.tsbuildinfo
+types/
+build/
+dist/
+out/
+coverage/
+index.js
+index.js.map
+/lib/
+
+# IDE + editor
+.vscode/
+.idea/
+.zed/
+*.swp

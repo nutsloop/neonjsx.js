@@ -1,0 +1,52 @@
+{
+  "name": "@nutsloop/neonjsx",
+  "version": "1.0.0",
+  "license": "Apache-2.0",
+  "description": "Lightweight JSX runtime.",
+  "type": "module",
+  "main": "index.js",
+  "types": "./types/index.d.ts",
+  "files": [
+    "index.js",
+    "lib/**/*.js",
+    "types/**/*.d.ts",
+    "!**/*.js.map"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "bash scripts/neonjsx/build.sh",
+    "clean": "bash scripts/neonjsx/clean.sh",
+    "all": "bash scripts/neonjsx/all.sh",
+    "lint": "npx eslint",
+    "lint-fix": "npx eslint --fix"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^8.52.0",
+    "@typescript-eslint/parser": "^8.52.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-perfectionist": "^5.3.1",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "JSX runtime",
+    "esmodule"
+  ],
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/nutsloop"
+    }
+  ],
+  "author": {
+    "name": "nutsloop",
+    "email": "nutsloop@proton.me",
+    "url": "https://github.com/nutsloop"
+  },
+  "homepage": "https://github.com/nutsloop/neonjsx.js#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nutsloop/neonjsx.js.git"
+  }
+}
