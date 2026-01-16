@@ -1,6 +1,6 @@
 {
   "name": "@nutsloop/neonjsx",
-  "version": "1.0.2",
+  "version": "1.2.2",
   "license": "Apache-2.0",
   "description": "Lightweight JSX runtime.",
   "type": "module",

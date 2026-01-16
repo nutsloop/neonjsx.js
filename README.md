@@ -8,6 +8,7 @@ single pass. No diffing, no reconciliation, no hooks, just the essentials.
 - Small, dependency-free runtime
 - Classic JSX pragma support (`h` / `Fragment`)
 - Simple DOM renderer (`render`)
+- CSS loading with browser cache optimization (`css`)
 - TypeScript-friendly, ESM-first
 
 ## Compile TSX/JSX (your app)
@@ -26,6 +27,7 @@ neonjsx-example/
     index.tsx
   public/
     index.html
+    app.css
 ```
 
 `package.json`:
@@ -63,14 +65,18 @@ neonjsx-example/
 
 `src/index.tsx`:
 ```ts
-import { render } from '@nutsloop/neonjsx';
+import { render, css } from '@nutsloop/neonjsx';
 
-const App = () => (
-  <main>
-    <h1>NeonJSX</h1>
-    <p>Runtime-only JSX, compiled by your toolchain.</p>
-  </main>
-);
+const App = () => {
+  css('./app.css');  // URL-based, browser cached
+  css('.highlight { color: blue; }', { inline: true });  // Inline CSS
+  return (
+    <main>
+      <h1>NeonJSX</h1>
+      <p className="highlight">Runtime-only JSX, compiled by your toolchain.</p>
+    </main>
+  );
+};
 
 render(<App />, document.getElementById('root')!);
 ```
@@ -91,6 +97,34 @@ render(<App />, document.getElementById('root')!);
 </html>
 ```
 
+`public/app.css`:
+```css
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: system-ui, sans-serif;
+  background: #1a1a2e;
+  color: #eee;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+main {
+  text-align: center;
+}
+
+h1 {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+```
+
 Run it:
 ```bash
 npm install
@@ -107,6 +141,19 @@ Collects children without adding an extra DOM element.
 
 ### `render(node, parent)`
 Clears the parent and appends the rendered DOM tree.
+
+### `css(urlOrContent, options?)`
+Loads CSS on first component render with deduplication.
+
+```ts
+css('/styles/button.css');                    // URL-based (browser cached)
+css('.btn { color: red; }', { inline: true }); // Inline CSS
+```
+
+- **URL mode**: Injects `<link rel="stylesheet">` into `<head>`
+- **Inline mode**: Injects `<style>` into `<head>` (pass `{ inline: true }`)
+- **Deduplication**: Same CSS is only loaded once across all components
+- **SSR safe**: No-op when `document` is undefined
 
 ## Notes
 - This renderer clears the target container on each `render`.
