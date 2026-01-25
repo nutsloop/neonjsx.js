@@ -38,4 +38,9 @@ coverage/
 *.swp
 certs/
 docs/data/
-docs/public/
+docs/public/*
+!docs/public/_default/
+docs/public/_default/*
+!docs/public/_default/app.css
+!docs/public/_default/index.html
+!docs/public/_default/spinner.css
