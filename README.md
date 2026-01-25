@@ -132,6 +132,15 @@ npm install
 npm run build
 ```
 
+For a complete example with lazy loading, Suspense, and animated spinners, see [docs/complete-example.md](docs/complete-example.md).
+
+To download only the example:
+```bash
+git clone --depth 1 --filter=blob:none --sparse https://github.com/nutsloop/neonjsx.js.git
+cd neonjsx.js
+git sparse-checkout set docs
+```
+
 ## API
 
 ### `h(type, props, ...children)`

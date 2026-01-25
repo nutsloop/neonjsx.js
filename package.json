@@ -33,6 +33,7 @@
   },
   "scripts": {
     "build": "bash scripts/neonjsx/build.sh",
+    "build:release": "bash scripts/neonjsx/build.sh --release",
     "clean": "bash scripts/neonjsx/clean.sh",
     "all": "bash scripts/neonjsx/all.sh",
     "lint": "npx eslint",
