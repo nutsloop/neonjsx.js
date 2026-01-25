@@ -38,6 +38,11 @@ function toDOM( node: any ): Node {
     return frag;
   }
 
+  // Debug: log VNode type
+  if ( node.type === '__lazy_ondemand_pending__' ) {
+    // console.trace( '[DEBUG] toDOM processing __lazy_ondemand_pending__' );
+  }
+
   // Handle Suspense boundary
   if ( node.type === '__suspense__' ) {
     const { fallback, children } = node.props;
@@ -78,6 +83,107 @@ function toDOM( node: any ): Node {
     } );
 
     return placeholder;
+  }
+
+  // Handle lazy ondemand pending marker
+  if ( node.type === '__lazy_ondemand_pending__' ) {
+    const { wrapper, componentProps } = node.props as {
+      wrapper: LazyComponent<any>;
+      componentProps: any;
+    };
+
+    const placeholder = document.createElement( 'div' );
+    placeholder.setAttribute( 'data-neon-lazy', 'ondemand-pending' );
+    placeholder.style.display = 'none';
+
+    // Store reference for manual re-render after load
+    ( placeholder as any ).__lazyComponent = wrapper;
+    ( placeholder as any ).__componentProps = componentProps;
+
+    // Set up a mechanism to watch for when __load() is called
+    // console.trace( '[lazy ondemand] Created placeholder, status:', wrapper.__status, 'has promise:', !!wrapper.__promise );
+    let stopPolling = false;
+    let pollCount = 0;
+    const checkAndRender = () => {
+      pollCount++;
+
+      // Stop if placeholder is no longer in the document
+      if ( stopPolling ) {
+        // console.trace( '[lazy ondemand] Stopped polling, stopPolling:', stopPolling );
+        return;
+      }
+
+      // Wait for element to be connected before checking
+      if ( !placeholder.isConnected ) {
+        if ( pollCount % 10 === 0 ) {
+          // console.trace( '[lazy ondemand] Waiting for connection...', pollCount );
+        }
+        setTimeout( checkAndRender, 100 );
+        return;
+      }
+
+      if ( wrapper.__promise ) {
+        // console.trace( '[lazy ondemand] Found promise after', pollCount, 'polls, status:', wrapper.__status );
+        stopPolling = true; // Stop polling once we find the promise
+        wrapper.__promise.then( () => {
+          // console.trace( '[lazy ondemand] Component loaded:', wrapper.__component?.name, 'status:', wrapper.__status, 'connected:', placeholder.isConnected );
+          if ( wrapper.__status === 'resolved' && placeholder.isConnected ) {
+            const resolved = toDOM( h( wrapper.__component!, componentProps ) );
+            // console.trace( '[lazy ondemand] Replacing placeholder with resolved component' );
+            placeholder.replaceWith( resolved );
+          }
+        } );
+      }
+      else {
+        if ( pollCount % 10 === 0 ) {
+          // console.trace( '[lazy ondemand] Still polling...', pollCount, 'status:', wrapper.__status );
+        }
+        // Check again after a short delay
+        setTimeout( checkAndRender, 100 );
+      }
+    };
+
+    // Start checking after a small delay to allow DOM connection
+    setTimeout( checkAndRender, 0 );
+
+    return placeholder;
+  }
+
+  // Handle lazy onvisible marker
+  if ( node.type === '__lazy_onvisible__' ) {
+    const { component, componentProps, fallback, observerOptions } = node.props;
+
+    const container = document.createElement( 'div' );
+    container.setAttribute( 'data-neon-lazy', 'onvisible' );
+
+    if ( fallback ) {
+      container.appendChild( toDOM( fallback ) );
+    }
+
+    if ( typeof IntersectionObserver !== 'undefined' ) {
+      const observer = new IntersectionObserver( ( entries ) => {
+        entries.forEach( ( entry ) => {
+          if ( entry.isIntersecting ) {
+            component.__load().then( () => {
+              if ( component.__status === 'resolved' ) {
+                const resolved = toDOM( h( component, componentProps ) );
+                container.innerHTML = '';
+                container.appendChild( resolved );
+              }
+            } );
+            observer.disconnect();
+          }
+        } );
+      }, observerOptions );
+
+      observer.observe( container );
+    }
+    else {
+      // SSR or old browser fallback
+      component.__load();
+    }
+
+    return container;
   }
 
   // Handle lazy error marker

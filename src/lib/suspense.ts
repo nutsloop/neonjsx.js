@@ -33,8 +33,8 @@ export function findLazyPending(
   // Check if type is a lazy component function (has __lazy marker)
   if ( typeof vnode.type === 'function' && ( vnode.type as LazyComponent<any> ).__lazy ) {
     const lazyComp = vnode.type as LazyComponent<any>;
-    // Only return if still pending
-    if ( lazyComp.__status === 'pending' ) {
+    // Only return if still pending AND (autoLoad OR already manually loading)
+    if ( lazyComp.__status === 'pending' && ( lazyComp.__autoLoad || lazyComp.__promise ) ) {
       return [ lazyComp ];
     }
   }
@@ -42,6 +42,11 @@ export function findLazyPending(
   // Also check for already-rendered lazy pending marker
   if ( vnode.type === '__lazy_pending__' ) {
     return [ vnode.props.wrapper as LazyComponent<any> ];
+  }
+
+  // Skip ondemand pending markers (not auto-loading)
+  if ( vnode.type === '__lazy_ondemand_pending__' ) {
+    return [];
   }
 
   // Recurse into children

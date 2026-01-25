@@ -132,7 +132,7 @@ npm install
 npm run build
 ```
 
-For a complete example with lazy loading, Suspense, and animated spinners, see [docs/complete-example.md](docs/complete-example.md).
+For a complete example with lazy loading, Suspense, trigger-based loading patterns, and animated spinners, see [docs/README.md](docs/README.md).
 
 To download only the example:
 ```bash
@@ -261,7 +261,7 @@ css('.btn { color: red; }', { inline: true }); // Inline CSS
 - **SSR safe**: No-op when `document` is undefined
 
 ### `lazy(loader)`
-Wraps a dynamic import for on-demand component loading.
+Wraps a dynamic import for on-demand component loading. The component loads automatically when rendered.
 
 ```ts
 import { lazy, Suspense, render } from '@nutsloop/neonjsx';
@@ -280,6 +280,65 @@ render(<App />, document.getElementById('root')!);
 - **Caching**: Same loader returns the same component instance
 - **SSR safe**: No-op when `document` is undefined
 - **Preloading**: Call `Dashboard.__load()` to preload before render
+
+### `lazyOnDemand(loader)`
+Like `lazy()`, but requires explicit triggering - the component won't load until you call `__load()`.
+
+```ts
+import { lazyOnDemand, Suspense } from '@nutsloop/neonjsx';
+
+const Settings = lazyOnDemand(() => import('./Settings.js'));
+
+const App = () => (
+  <>
+    <button onClick={() => Settings.__load()}>Load Settings</button>
+    <Suspense fallback={<p>Loading...</p>}>
+      <Settings />
+    </Suspense>
+  </>
+);
+```
+
+### Lazy Loading Helpers
+
+**`lazyOnHover(component)`** - Load on mouse enter:
+```ts
+import { lazyOnDemand, lazyOnHover } from '@nutsloop/neonjsx';
+
+const Dashboard = lazyOnDemand(() => import('./Dashboard.js'));
+const hoverProps = lazyOnHover(Dashboard);
+
+<a href="/dashboard" {...hoverProps}>Dashboard</a>
+```
+
+**`lazyAfterDelay(component, ms)`** - Load after timeout:
+```ts
+import { lazyOnDemand, lazyAfterDelay } from '@nutsloop/neonjsx';
+
+const Analytics = lazyOnDemand(() => import('./Analytics.js'));
+lazyAfterDelay(Analytics, 3000); // Load after 3 seconds
+```
+
+**`lazyWhenIdle(component, timeout?)`** - Load when browser is idle:
+```ts
+import { lazyOnDemand, lazyWhenIdle } from '@nutsloop/neonjsx';
+
+const ChatWidget = lazyOnDemand(() => import('./ChatWidget.js'));
+lazyWhenIdle(ChatWidget); // Load during idle time
+```
+
+**`LazyOnVisible`** - Load when scrolled into view:
+```ts
+import { lazyOnDemand, LazyOnVisible } from '@nutsloop/neonjsx';
+
+const Footer = lazyOnDemand(() => import('./Footer.js'));
+
+<LazyOnVisible
+  component={Footer}
+  fallback={<div style="height: 200px">Scroll to load footer</div>}
+  rootMargin="200px"
+/>
+```
 
 ### `Suspense`
 Shows a fallback while lazy components inside are loading.

@@ -12,21 +12,29 @@ export interface LazyComponent<P = any> {
   __error: Error | null;
   __promise: Promise<void> | null;
   __load: () => Promise<void>;
+  __autoLoad: boolean;
 }
 
-const componentCache = new Map<LazyLoader<any>, LazyComponent<any>>();
+const autoLoadCache = new Map<LazyLoader<any>, LazyComponent<any>>();
+const onDemandCache = new Map<LazyLoader<any>, LazyComponent<any>>();
 
-export function lazy<P = any>( loader: LazyLoader<P> ): LazyComponent<P> {
-  if ( componentCache.has( loader ) ) {
-    return componentCache.get( loader )!;
+function createLazyComponent<P>( loader: LazyLoader<P>, autoLoad: boolean ): LazyComponent<P> {
+  const cache = autoLoad ? autoLoadCache : onDemandCache;
+
+  if ( cache.has( loader ) ) {
+    return cache.get( loader )!;
   }
 
   const LazyWrapper: LazyComponent<P> = ( ( props: P & { children?: any } ) => {
+    // console.trace( '[LazyWrapper] Called, autoLoad:', autoLoad, 'status:', LazyWrapper.__status );
+
     if ( LazyWrapper.__status === 'resolved' && LazyWrapper.__component ) {
+      // console.trace( '[LazyWrapper] Returning resolved component' );
       return h( LazyWrapper.__component, props );
     }
 
     if ( LazyWrapper.__status === 'rejected' ) {
+      // console.trace( '[LazyWrapper] Returning error' );
       return {
         type: '__lazy_error__',
         props: { error: LazyWrapper.__error },
@@ -34,15 +42,19 @@ export function lazy<P = any>( loader: LazyLoader<P> ): LazyComponent<P> {
       } as VNode;
     }
 
-    if ( !LazyWrapper.__promise ) {
+    if ( !LazyWrapper.__promise && LazyWrapper.__autoLoad ) {
+      // console.trace( '[LazyWrapper] Auto-loading' );
       LazyWrapper.__load();
     }
 
-    return {
-      type: '__lazy_pending__',
+    const vnode = {
+      type: LazyWrapper.__autoLoad ? '__lazy_pending__' : '__lazy_ondemand_pending__',
       props: { wrapper: LazyWrapper, componentProps: props },
       children: []
     } as VNode;
+
+    // console.trace( '[LazyWrapper] Returning VNode with type:', vnode.type );
+    return vnode;
   } ) as LazyComponent<P>;
 
   LazyWrapper.__lazy = true;
@@ -50,9 +62,13 @@ export function lazy<P = any>( loader: LazyLoader<P> ): LazyComponent<P> {
   LazyWrapper.__component = null;
   LazyWrapper.__error = null;
   LazyWrapper.__promise = null;
+  LazyWrapper.__autoLoad = autoLoad;
 
   LazyWrapper.__load = () => {
+    // console.trace( '[LazyWrapper.__load] Called, autoLoad:', autoLoad, 'has promise:', !!LazyWrapper.__promise );
+
     if ( LazyWrapper.__promise ) {
+      // console.trace( '[LazyWrapper.__load] Promise already exists, returning it' );
       return LazyWrapper.__promise;
     }
 
@@ -61,12 +77,15 @@ export function lazy<P = any>( loader: LazyLoader<P> ): LazyComponent<P> {
       return Promise.resolve();
     }
 
+    // console.trace( '[LazyWrapper.__load] Starting loader()' );
     LazyWrapper.__promise = loader()
       .then( mod => {
+        // console.trace( '[LazyWrapper.__load] Loader resolved, setting component' );
         LazyWrapper.__component = mod.default;
         LazyWrapper.__status = 'resolved';
       } )
       .catch( err => {
+        // console.trace( '[LazyWrapper.__load] Loader failed:', err );
         LazyWrapper.__error = err;
         LazyWrapper.__status = 'rejected';
       } );
@@ -74,6 +93,14 @@ export function lazy<P = any>( loader: LazyLoader<P> ): LazyComponent<P> {
     return LazyWrapper.__promise;
   };
 
-  componentCache.set( loader, LazyWrapper );
+  cache.set( loader, LazyWrapper );
   return LazyWrapper;
+}
+
+export function lazy<P = any>( loader: LazyLoader<P> ): LazyComponent<P> {
+  return createLazyComponent( loader, true );
+}
+
+export function lazyOnDemand<P = any>( loader: LazyLoader<P> ): LazyComponent<P> {
+  return createLazyComponent( loader, false );
 }
