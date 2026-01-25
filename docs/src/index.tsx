@@ -1,6 +1,11 @@
 import {
   render,
   lazy,
+  lazyOnDemand,
+  lazyOnHover,
+  lazyAfterDelay,
+  lazyWhenIdle,
+  LazyOnVisible,
   Suspense,
   ErrorBoundary,
   css,
@@ -15,8 +20,26 @@ import { Spinner } from './components/Spinner.js';
 
 css( './app.css' );
 
-// Lazy load the heavy Dashboard component
+// Auto-loading: loads immediately when rendered
 const Dashboard = lazy( () => import( './components/Dashboard.js' ) );
+
+// Manual loading: requires explicit __load() call
+const Settings = lazyOnDemand( () => import( './components/Settings.js' ) );
+
+// Hover preloading: loads on mouse enter
+const Reports = lazyOnDemand( () => import( './components/Reports.js' ) );
+const reportsHoverProps = lazyOnHover( Reports );
+
+// Delayed loading: loads after 5 seconds
+const Analytics = lazyOnDemand( () => import( './components/Analytics.js' ) );
+lazyAfterDelay( Analytics, 5000 );
+
+// Idle loading: loads when browser is idle
+const ChatWidget = lazyOnDemand( () => import( './components/ChatWidget.js' ) );
+lazyWhenIdle( ChatWidget );
+
+// Scroll-based loading: Footer component uses LazyOnVisible
+const Footer = lazyOnDemand( () => import( './components/Footer.js' ) );
 
 const injectTargetId = 'inject-target';
 const mountTargetId = 'mount-target';
@@ -93,20 +116,75 @@ const App = () => (
   <main>
     <header>
       <h1>NeonJSX Lazy Loading</h1>
-      <p>Dynamic component loading with Suspense</p>
+      <p>Trigger-based component loading patterns</p>
     </header>
 
-    <ErrorBoundary fallback={ ( error ) => (
-      <div className="error-box">
-        <h2>Something went wrong</h2>
-        <p>{ error.message }</p>
-      </div>
-    ) }>
-      <Suspense fallback={ <Spinner message="Loading Dashboard..." /> }>
-        <Dashboard userId={ 42 } />
-      </Suspense>
-    </ErrorBoundary>
+    {/* Auto-loading with Suspense */}
+    <section className="demo-section">
+      <h2>Auto-Loading (lazy)</h2>
+      <p>Dashboard loads automatically when rendered</p>
+      <ErrorBoundary fallback={ ( error ) => (
+        <div className="error-box">
+          <h2>Failed to load</h2>
+          <p>{ error.message }</p>
+        </div>
+      ) }>
+        <Suspense fallback={ <Spinner message="Loading Dashboard..." /> }>
+          <Dashboard userId={ 42 } />
+        </Suspense>
+      </ErrorBoundary>
+    </section>
 
+    {/* Manual trigger */}
+    <section className="demo-section">
+      <h2>Manual Loading (lazyOnDemand)</h2>
+      <p>Click button to trigger loading</p>
+      <div className="demo-actions">
+        <button type="button" onClick={ () => Settings.__load() }>
+          Load Settings
+        </button>
+      </div>
+      <Settings />
+    </section>
+
+    {/* Hover preload */}
+    <section className="demo-section">
+      <h2>Hover Preload (lazyOnHover)</h2>
+      <p>Hover over link to start loading</p>
+      <div className="demo-actions">
+        <a href="#reports" { ...reportsHoverProps } style="display: inline-block; padding: 0.6rem 1.1rem; border-radius: 999px; background: linear-gradient(135deg, #00d4ff 0%, #00ff88 100%); color: #07121e; font-weight: 700; text-decoration: none;">
+          View Reports
+        </a>
+      </div>
+      <Reports />
+    </section>
+
+    {/* Delayed loading */}
+    <section className="demo-section">
+      <h2>Delayed Loading (lazyAfterDelay)</h2>
+      <p>Analytics loads after 5 seconds</p>
+      <Analytics />
+    </section>
+
+    {/* Idle loading */}
+    <section className="demo-section">
+      <h2>Idle Loading (lazyWhenIdle)</h2>
+      <p>ChatWidget loads during browser idle time</p>
+      <ChatWidget />
+    </section>
+
+    {/* Scroll-based loading */}
+    <section className="demo-section">
+      <h2>Scroll-Based Loading (LazyOnVisible)</h2>
+      <p>Footer loads when scrolled into view</p>
+      <LazyOnVisible
+        component={ Footer }
+        fallback={ <div style="height: 200px; border: 1px dashed rgba(255, 255, 255, 0.15); border-radius: 12px; display: flex; align-items: center; justify-content: center; color: #8aa0b8;">Scroll down to load footer</div> }
+        rootMargin="200px"
+      />
+    </section>
+
+    {/* Lifecycle APIs */}
     <section className="demo-section">
       <h2>Inject + Eject</h2>
       <p>Insert UI into an existing container without re-mounting the app.</p>

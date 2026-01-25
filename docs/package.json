@@ -7,7 +7,7 @@
     "serve": "npx serve public"
   },
   "dependencies": {
-    "@nutsloop/neonjsx": "^1.4.0"
+    "@nutsloop/neonjsx": "^1.5.0"
   },
   "devDependencies": {
     "esbuild": "^0.27.2",

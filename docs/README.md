@@ -1,13 +1,18 @@
 # NeonJSX Lazy Loading Example
 
-A complete example demonstrating dynamic component loading with `lazy`, `Suspense`, and `ErrorBoundary`,
-plus the new lifecycle APIs for injection and mounting.
+A complete example demonstrating dynamic component loading with `lazy`, `lazyOnDemand`, trigger-based loading patterns,
+`Suspense`, `ErrorBoundary`, and lifecycle APIs.
 
 ## What This Example Shows
 
-- **Lazy loading**: The Dashboard component is loaded on-demand via dynamic `import()`
-- **Suspense fallback**: A spinner displays while the component loads
-- **Simulated delay**: The Dashboard module has a 3-second artificial delay to demonstrate loading states
+- **Auto-loading**: The Dashboard component loads automatically via `lazy()`
+- **Manual loading**: Settings component uses `lazyOnDemand()` with button trigger
+- **Hover preloading**: Reports component loads on hover with `lazyOnHover()`
+- **Scroll-based loading**: Footer loads when scrolled into view with `LazyOnVisible`
+- **Delayed loading**: Analytics loads after 5 seconds with `lazyAfterDelay()`
+- **Idle loading**: ChatWidget loads during idle time with `lazyWhenIdle()`
+- **Suspense fallback**: A spinner displays while components load
+- **Simulated delay**: Components have artificial delays to demonstrate loading states
 - **Error handling**: ErrorBoundary catches any loading failures
 - **CSS loading**: Both URL-based and inline CSS with deduplication
 - **Injection**: Buttons show how to `inject()` and `eject()` UI into an existing container
@@ -20,10 +25,15 @@ docs/
   package.json
   tsconfig.json
   src/
-    index.tsx              # Main entry point
+    index.tsx              # Main entry point with all lazy loading patterns
     components/
       Spinner.tsx          # Loading spinner component
-      Dashboard.tsx        # Lazy-loaded component (simulates 3s load)
+      Dashboard.tsx        # Auto-loading component (lazy)
+      Settings.tsx         # Manual loading component (lazyOnDemand)
+      Reports.tsx          # Hover-triggered component (lazyOnHover)
+      Footer.tsx           # Scroll-triggered component (LazyOnVisible)
+      Analytics.tsx        # Delayed loading component (lazyAfterDelay)
+      ChatWidget.tsx       # Idle loading component (lazyWhenIdle)
   public/
     _default/
       index.html
@@ -53,6 +63,11 @@ this locally against your checkout. If your path is different, update it.
 import {
   render,
   lazy,
+  lazyOnDemand,
+  lazyOnHover,
+  lazyAfterDelay,
+  lazyWhenIdle,
+  LazyOnVisible,
   Suspense,
   ErrorBoundary,
   css,
@@ -67,115 +82,114 @@ import { Spinner } from './components/Spinner.js';
 
 css('./app.css');
 
-// Wrap dynamic import with lazy()
+// Auto-loading: loads immediately when rendered
 const Dashboard = lazy(() => import('./components/Dashboard.js'));
 
-const injectTargetId = 'inject-target';
-const mountTargetId = 'mount-target';
-let mountHandle: MountHandle | null = null;
+// Manual loading: requires explicit __load() call
+const Settings = lazyOnDemand(() => import('./components/Settings.js'));
 
-const MountCard = () => (
-  <div className="mount-card">
-    <h3>Mounted Panel</h3>
-    <p>This content is managed by mount/unmount/cleanup.</p>
-  </div>
-);
+// Hover preloading: loads on mouse enter
+const Reports = lazyOnDemand(() => import('./components/Reports.js'));
+const reportsHoverProps = lazyOnHover(Reports);
 
-const getTarget = (id: string) =>
-  document.getElementById(id) as HTMLElement | null;
+// Delayed loading: loads after 5 seconds
+const Analytics = lazyOnDemand(() => import('./components/Analytics.js'));
+lazyAfterDelay(Analytics, 5000);
 
-const handleInject = async (mode: 'append' | 'prepend' | 'replace') => {
-  const target = getTarget(injectTargetId);
-  if (!target) return;
-  await inject(<Spinner message={`Injected via ${mode}`} />, target, { mode });
-};
+// Idle loading: loads when browser is idle
+const ChatWidget = lazyOnDemand(() => import('./components/ChatWidget.js'));
+lazyWhenIdle(ChatWidget);
 
-const handleEject = async () => {
-  const target = getTarget(injectTargetId);
-  if (!target) return;
-  await eject(target);
-};
-
-const handleMount = async () => {
-  const target = getTarget(mountTargetId);
-  if (!target) return;
-  mountHandle = await mount(<MountCard />, target);
-};
-
-const handleUnmount = async () => {
-  const target = getTarget(mountTargetId);
-  if (!target) return;
-  if (mountHandle) {
-    await mountHandle.unmount();
-    mountHandle = null;
-    return;
-  }
-  await unmount(target);
-};
-
-const handleCleanup = async () => {
-  const target = getTarget(mountTargetId);
-  if (!target) return;
-  if (mountHandle) {
-    await mountHandle.cleanup();
-    mountHandle = null;
-    return;
-  }
-  await cleanup(target);
-};
+// Scroll-based loading: Footer component uses LazyOnVisible
+const Footer = lazyOnDemand(() => import('./components/Footer.js'));
 
 const App = () => (
   <main>
     <header>
       <h1>NeonJSX Lazy Loading</h1>
+      <p>Trigger-based component loading patterns</p>
     </header>
 
-    <ErrorBoundary fallback={(error) => (
-      <div className="error-box">
-        <h2>Something went wrong</h2>
-        <p>{error.message}</p>
-      </div>
-    )}>
-      <Suspense fallback={<Spinner message="Loading Dashboard..." />}>
-        <Dashboard userId={42} />
-      </Suspense>
-    </ErrorBoundary>
-
+    {/* Auto-loading with Suspense */}
     <section className="demo-section">
-      <h2>Inject + Eject</h2>
-      <p>Insert UI into an existing container without re-mounting the app.</p>
-      <div className="demo-actions">
-        <button type="button" onClick={() => { void handleInject('replace'); }}>
-          Replace
-        </button>
-        <button type="button" onClick={() => { void handleInject('append'); }}>
-          Append
-        </button>
-        <button type="button" onClick={() => { void handleInject('prepend'); }}>
-          Prepend
-        </button>
-        <button type="button" onClick={() => { void handleEject(); }}>
-          Eject
-        </button>
-      </div>
-      <div id="inject-target" className="demo-target"></div>
+      <h2>Auto-Loading (lazy)</h2>
+      <p>Dashboard loads automatically when rendered</p>
+      <ErrorBoundary fallback={(error) => (
+        <div className="error-box">
+          <h2>Failed to load</h2>
+          <p>{error.message}</p>
+        </div>
+      )}>
+        <Suspense fallback={<Spinner message="Loading Dashboard..." />}>
+          <Dashboard userId={42} />
+        </Suspense>
+      </ErrorBoundary>
     </section>
 
+    {/* Manual trigger */}
     <section className="demo-section">
-      <h2>Mount + Unmount + Cleanup</h2>
-      <p>Explicit lifecycle control for a mounted sub-root.</p>
+      <h2>Manual Loading (lazyOnDemand)</h2>
+      <p>Click button to trigger loading</p>
+      <button onClick={() => Settings.__load()}>Load Settings</button>
+      <Suspense fallback={<Spinner message="Loading Settings..." />}>
+        <Settings />
+      </Suspense>
+    </section>
+
+    {/* Hover preload */}
+    <section className="demo-section">
+      <h2>Hover Preload (lazyOnHover)</h2>
+      <p>Hover over link to start loading</p>
+      <a href="#reports" {...reportsHoverProps}>View Reports</a>
+      <Suspense fallback={<Spinner message="Loading Reports..." />}>
+        <Reports />
+      </Suspense>
+    </section>
+
+    {/* Delayed loading */}
+    <section className="demo-section">
+      <h2>Delayed Loading (lazyAfterDelay)</h2>
+      <p>Analytics loads after 5 seconds</p>
+      <Suspense fallback={<Spinner message="Loading Analytics..." />}>
+        <Analytics />
+      </Suspense>
+    </section>
+
+    {/* Idle loading */}
+    <section className="demo-section">
+      <h2>Idle Loading (lazyWhenIdle)</h2>
+      <p>ChatWidget loads during browser idle time</p>
+      <Suspense fallback={<Spinner message="Loading Chat..." />}>
+        <ChatWidget />
+      </Suspense>
+    </section>
+
+    {/* Scroll-based loading */}
+    <section className="demo-section">
+      <h2>Scroll-Based Loading (LazyOnVisible)</h2>
+      <p>Footer loads when scrolled into view</p>
+      <LazyOnVisible
+        component={Footer}
+        fallback={<div style="height: 200px; border: 1px dashed #666; display: flex; align-items: center; justify-content: center;">Scroll down to load footer</div>}
+        rootMargin="200px"
+      />
+    </section>
+
+    {/* Lifecycle APIs */}
+    <section className="demo-section">
+      <h2>Inject + Eject</h2>
+      <p>Dynamic content insertion</p>
       <div className="demo-actions">
-        <button type="button" onClick={() => { void handleMount(); }}>
-          Mount
-        </button>
-        <button type="button" onClick={() => { void handleUnmount(); }}>
-          Unmount
-        </button>
-        <button type="button" onClick={() => { void handleCleanup(); }}>
-          Cleanup
-        </button>
+        <button onClick={async () => {
+          const target = document.getElementById('inject-target');
+          if (target) await inject(<Spinner message="Injected" />, target);
+        }}>Inject</button>
+        <button onClick={async () => {
+          const target = document.getElementById('inject-target');
+          if (target) await eject(target);
+        }}>Eject</button>
       </div>
-      <div id="mount-target" className="demo-target"></div>
+      <div id="inject-target" className="demo-target"></div>
     </section>
   </main>
 );
@@ -184,9 +198,12 @@ render(<App />, document.getElementById('root')!);
 ```
 
 What to look for:
-- The buttons call async APIs, so you can see how the lifecycle functions work.
-- `inject()` is used for dynamic content inside a live app.
-- `mount()` creates a sub-root so you can tear it down explicitly.
+- `lazy()` auto-loads when rendered inside Suspense
+- `lazyOnDemand()` requires manual trigger via `__load()` call
+- `lazyOnHover()` returns event props for hover preloading
+- `lazyAfterDelay()` and `lazyWhenIdle()` trigger loading automatically
+- `LazyOnVisible` uses IntersectionObserver for scroll-based loading
+- All patterns work with Suspense boundaries
 
 ### 2. Lazy-Loaded Component (`src/components/Dashboard.tsx`)
 
@@ -374,12 +391,74 @@ header p {
 
 ## Key Concepts
 
-### `lazy(loader)`
+### `lazy(loader)` - Auto-Loading
 
-Wraps a dynamic import and returns a component that loads on first render:
+Wraps a dynamic import and auto-loads on first render:
 
 ```tsx
-const MyComponent = lazy(() => import('./MyComponent.js'));
+const Dashboard = lazy(() => import('./Dashboard.js'));
+
+// Loads automatically when rendered
+<Suspense fallback={<Loading />}>
+  <Dashboard />
+</Suspense>
+```
+
+### `lazyOnDemand(loader)` - Manual Trigger
+
+Requires explicit `__load()` call to start loading:
+
+```tsx
+const Settings = lazyOnDemand(() => import('./Settings.js'));
+
+// Must call __load() manually
+<button onClick={() => Settings.__load()}>Load Settings</button>
+<Suspense fallback={<Loading />}>
+  <Settings />
+</Suspense>
+```
+
+### `lazyOnHover(component)` - Hover Preload
+
+Returns props that trigger loading on mouse enter:
+
+```tsx
+const Reports = lazyOnDemand(() => import('./Reports.js'));
+const hoverProps = lazyOnHover(Reports);
+
+<a {...hoverProps}>Reports</a>
+```
+
+### `lazyAfterDelay(component, ms)` - Delayed Load
+
+Triggers loading after a timeout:
+
+```tsx
+const Analytics = lazyOnDemand(() => import('./Analytics.js'));
+lazyAfterDelay(Analytics, 5000); // Loads after 5 seconds
+```
+
+### `lazyWhenIdle(component, timeout?)` - Idle Load
+
+Triggers loading when browser is idle:
+
+```tsx
+const ChatWidget = lazyOnDemand(() => import('./ChatWidget.js'));
+lazyWhenIdle(ChatWidget); // Loads during idle time
+```
+
+### `LazyOnVisible` - Scroll-Based Load
+
+Loads when component scrolls into view:
+
+```tsx
+const Footer = lazyOnDemand(() => import('./Footer.js'));
+
+<LazyOnVisible
+  component={Footer}
+  fallback={<div>Scroll to load</div>}
+  rootMargin="200px"
+/>
 ```
 
 ### `Suspense`
@@ -402,17 +481,6 @@ Catches errors in children (including failed imports):
     <LazyComponent />
   </Suspense>
 </ErrorBoundary>
-```
-
-### Preloading
-
-Start loading before render (e.g., on hover):
-
-```tsx
-const Settings = lazy(() => import('./Settings.js'));
-
-// Preload on mouse enter
-link.onmouseenter = () => Settings.__load();
 ```
 
 ## Lifecycle APIs in This Example
