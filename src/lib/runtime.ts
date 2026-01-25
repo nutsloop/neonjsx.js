@@ -1,3 +1,6 @@
+import { findLazyPending } from './suspense.js';
+import type { LazyComponent } from './lazy.js';
+
 export type VNode = {
   type: string | ( ( props: any ) => VNode | VNode[] | string | null );
   props: Record<string, any>;
@@ -33,6 +36,71 @@ function toDOM( node: any ): Node {
     node.forEach( child => frag.appendChild( toDOM( child ) ) );
 
     return frag;
+  }
+
+  // Handle Suspense boundary
+  if ( node.type === '__suspense__' ) {
+    const { fallback, children } = node.props;
+    const pending = findLazyPending( children );
+
+    if ( pending.length === 0 ) {
+      return toDOM( children );
+    }
+
+    const container = document.createElement( 'div' );
+    container.setAttribute( 'data-neon-suspense', 'true' );
+    container.appendChild( toDOM( fallback ) );
+
+    Promise.all( pending.map( lc => lc.__load() ) ).then( () => {
+      const content = toDOM( children );
+      container.innerHTML = '';
+      container.appendChild( content );
+    } );
+
+    return container;
+  }
+
+  // Handle lazy pending marker
+  if ( node.type === '__lazy_pending__' ) {
+    const { wrapper, componentProps } = node.props as {
+      wrapper: LazyComponent<any>;
+      componentProps: any;
+    };
+
+    const placeholder = document.createElement( 'div' );
+    placeholder.setAttribute( 'data-neon-lazy', 'pending' );
+
+    wrapper.__load().then( () => {
+      if ( wrapper.__status === 'resolved' ) {
+        const resolved = toDOM( h( wrapper.__component!, componentProps ) );
+        placeholder.replaceWith( resolved );
+      }
+    } );
+
+    return placeholder;
+  }
+
+  // Handle lazy error marker
+  if ( node.type === '__lazy_error__' ) {
+    const errorDiv = document.createElement( 'div' );
+    errorDiv.setAttribute( 'data-neon-lazy', 'error' );
+    errorDiv.textContent = `Error: ${ node.props.error?.message || 'Unknown' }`;
+    return errorDiv;
+  }
+
+  // Handle error boundary
+  if ( node.type === '__error_boundary__' ) {
+    const { fallback, children } = node.props;
+
+    try {
+      return toDOM( children );
+    }
+    catch ( error ) {
+      if ( typeof fallback === 'function' ) {
+        return toDOM( fallback( error as Error ) );
+      }
+      return toDOM( fallback );
+    }
   }
 
   if ( typeof node.type === 'function' ) {

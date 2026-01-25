@@ -9,6 +9,7 @@ single pass. No diffing, no reconciliation, no hooks, just the essentials.
 - Classic JSX pragma support (`h` / `Fragment`)
 - Simple DOM renderer (`render`)
 - CSS loading with browser cache optimization (`css`)
+- Dynamic component loading (`lazy` / `Suspense`)
 - TypeScript-friendly, ESM-first
 
 ## Compile TSX/JSX (your app)
@@ -154,6 +155,60 @@ css('.btn { color: red; }', { inline: true }); // Inline CSS
 - **Inline mode**: Injects `<style>` into `<head>` (pass `{ inline: true }`)
 - **Deduplication**: Same CSS is only loaded once across all components
 - **SSR safe**: No-op when `document` is undefined
+
+### `lazy(loader)`
+Wraps a dynamic import for on-demand component loading.
+
+```ts
+import { lazy, Suspense, render } from '@nutsloop/neonjsx';
+
+const Dashboard = lazy(() => import('./Dashboard.js'));
+
+const App = () => (
+  <Suspense fallback={<p>Loading...</p>}>
+    <Dashboard userId={123} />
+  </Suspense>
+);
+
+render(<App />, document.getElementById('root')!);
+```
+
+- **Caching**: Same loader returns the same component instance
+- **SSR safe**: No-op when `document` is undefined
+- **Preloading**: Call `Dashboard.__load()` to preload before render
+
+### `Suspense`
+Shows a fallback while lazy components inside are loading.
+
+```ts
+<Suspense fallback={<div>Loading...</div>}>
+  <LazyComponent />
+</Suspense>
+```
+
+Multiple lazy components share the same fallback:
+```ts
+const Chart = lazy(() => import('./Chart.js'));
+const Table = lazy(() => import('./Table.js'));
+
+<Suspense fallback={<div class="skeleton" />}>
+  <Chart />
+  <Table />
+</Suspense>
+```
+
+### `ErrorBoundary`
+Catches errors in children and displays a fallback.
+
+```ts
+import { ErrorBoundary } from '@nutsloop/neonjsx';
+
+<ErrorBoundary fallback={(error) => <p>Error: {error.message}</p>}>
+  <Suspense fallback={<p>Loading...</p>}>
+    <Dashboard />
+  </Suspense>
+</ErrorBoundary>
+```
 
 ## Notes
 - This renderer clears the target container on each `render`.
