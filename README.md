@@ -150,7 +150,102 @@ Creates a virtual node. This is the JSX factory function.
 Collects children without adding an extra DOM element.
 
 ### `render(node, parent)`
-Clears the parent and appends the rendered DOM tree.
+Initial mount only. Clears the parent and appends the rendered DOM tree.
+Use this when you bootstrap the app at first page load and you want the
+root container to represent the whole application.
+
+Why keep `render()`?
+- It is synchronous and simple, which is ideal for the first mount.
+- It communicates that this is the primary app root, not a dynamic insert.
+- It keeps existing examples and mental models for app startup intact.
+
+For dynamic updates inside existing DOM, use `inject()` or `mount()`.
+
+### `mount(node, parent)`
+Async root mount with an explicit lifecycle handle. `mount()` is the
+modern, explicit alternative to `render()` when you want control over
+cleanup and future lifecycle capabilities.
+
+```ts
+const root = await mount( <App />, document.getElementById( 'root' )! );
+```
+
+What it does today:
+- Performs a `render()` into the container (replace mode).
+- Returns a handle with `unmount()` and `cleanup()` methods.
+- Tracks that the container is a mounted root.
+
+Why use it:
+- Clear intent: "this is a mounted root I may later tear down".
+- Safer teardown: you can unmount predictably, even across routes or hot reloads.
+- Forward compatible: the handle gives us space to add updates or teardown hooks.
+
+### `unmount(parent)`
+Async teardown of a mounted root container.
+
+```ts
+await unmount( document.getElementById( 'root' )! );
+```
+
+Current behavior:
+- Clears the container.
+- Removes the container from the internal mounted registry.
+
+### `cleanup(parent)`
+Async cleanup alias for `unmount()`. This is the semantic "end of lifecycle"
+operation you can call when you want to ensure the container is empty and
+the mount is discarded.
+
+```ts
+await cleanup( document.getElementById( 'root' )! );
+```
+
+Why both `unmount` and `cleanup`?
+- `unmount()` is lifecycle terminology that matches other UI runtimes.
+- `cleanup()` reads more like a finalization step, especially in async flows.
+
+### `inject(node, parent, options?)`
+Async injection for dynamic content inside an existing DOM container.
+This is ideal for spinners, toasts, dialogs, or any UI that lives inside
+an already-mounted part of the page.
+
+```ts
+await inject( <Spinner />, contentEl, { mode: 'append' } );
+```
+
+Modes:
+- `replace` (default): same DOM behavior as `render()` but without implying
+  this is the root app mount.
+- `append`: inserts the rendered nodes after the current children.
+- `prepend`: inserts the rendered nodes before the current children.
+
+Notes:
+- `inject()` is async so the API can evolve (cleanup hooks, async rendering,
+  or future diffing) without breaking your call sites.
+- Use `eject()` to remove injected content when you are done.
+
+### `eject(parent)`
+Async cleanup for injected content. Clears the parent container.
+
+```ts
+await eject( contentEl );
+```
+
+### How the APIs fit together
+Think of the DOM in two layers: root app mounts and local injections.
+
+Root mount (app lifecycle):
+- Use `render()` for the simplest initial boot.
+- Use `mount()` if you want explicit teardown and a returned handle.
+- Use `unmount()` or `cleanup()` to remove the root app.
+
+Local injection (dynamic UI inside the app):
+- Use `inject()` to place content inside an existing DOM container.
+- Use `eject()` to clear that container.
+
+This split keeps the intent clear:
+- `render()`/`mount()` communicate "this is the app root".
+- `inject()` communicates "this is a dynamic insertion".
 
 ### `css(urlOrContent, options?)`
 Loads CSS on first component render with deduplication.

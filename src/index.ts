@@ -1,4 +1,9 @@
 export * from './lib/runtime.js';
+export { inject } from './lib/inject.js';
+export type { InjectMode, InjectOptions } from './lib/inject.js';
+export { eject } from './lib/eject.js';
+export { mount, unmount, cleanup } from './lib/mount.js';
+export type { MountHandle } from './lib/mount.js';
 export { css } from './lib/css.js';
 export type { CSSOptions } from './lib/css.js';
 export { lazy } from './lib/lazy.js';
